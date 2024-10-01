@@ -39,6 +39,7 @@ jobs:
         env:  # Define environment variables here
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          PUBLIC_KEY: $(cat ~/.ssh/id_rsa.pub)  # Pass public key directly
         run: |
           cd .github/workflows/Terraform
           terraform init
