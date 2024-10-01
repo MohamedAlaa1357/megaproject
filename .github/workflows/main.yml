@@ -39,9 +39,21 @@ jobs:
       # Step 5: Install Terraform
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
 
-
-        
+      # Step 5: Cache Terraform state and module downloads
+      - name: Cache Terraform state
+        uses: actions/cache@v3
+        with:
+          path: |
+            .terraform
+            .terraform.lock.hcl
+            terraform.tfstate
+          key: terraform-${{ github.ref }}-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            terraform-${{ github.ref }}-  
+      
       # Step 6: Change to the Terraform directory and initialize and apply Terraform
       - name: Terraform init and apply
         env:  # Define environment variables here
@@ -62,12 +74,12 @@ jobs:
 
 
       # Step 8: Extract EC2 Public IP from Terraform output
-      #- name: Get EC2 instance IP
-       # id: ec2_ip
-        #run: |
-         #cd .github/workflows/Terraform
-         #EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
-         #echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
+      - name: Get EC2 instance IP
+        id: ec2_ip
+        run: |
+           cd .github/workflows/Terraform
+           EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
+           echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
 
 
          
@@ -81,7 +93,7 @@ jobs:
       - name: Configure Ansible Inventory
         run: |
           echo "[ec2]" > inventory.ini
-          echo "34.222.49.189 ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
           cat inventory.ini
 
       # Step 11: Run Ansible playbook to configure Prometheus and Grafana
