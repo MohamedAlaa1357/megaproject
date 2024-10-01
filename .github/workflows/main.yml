@@ -14,29 +14,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Attempt to download Terraform state artifact (ignore failure)
-      - name: Download Terraform state (if exists)
-        uses: actions/download-artifact@v3
-        with:
-         name: terraform-state
-         path: .github/workflows/Terraform
-        continue-on-error: true  # Allow the workflow to continue even if the artifact doesn't exist
 
-      # Step 3: Generate SSH key pair
+      # Step 2: Generate SSH key pair
       - name: Generate SSH key pair
         run: |
           mkdir -p ~/.ssh
           ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
           cat ~/.ssh/id_rsa.pub
 
-      # Step 4: Set AWS Credentials as environment variables
+      # Step 3: Set AWS Credentials as environment variables
       - name: Set AWS Credentials
         run: |
           echo "aws_access_key = \"${{ secrets.AWS_ACCESS_KEY }}\"" >> .github/workflows/Terraform/terraform.tfvars
           echo "aws_secret_key = \"${{ secrets.AWS_SECRET_KEY }}\"" >> .github/workflows/Terraform/terraform.tfvars
           echo "public_key = \"$(cat ~/.ssh/id_rsa.pub)\"" >> .github/workflows/Terraform/terraform.tfvars
 
-      # Step 5: Install Terraform
+      # Step 4: Install Terraform
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
         with:
@@ -65,15 +58,8 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      # Step 7: Upload the Terraform state file as an artifact
-      - name: Upload Terraform state
-        uses: actions/upload-artifact@v3
-        with:
-             name: terraform-state
-             path: .github/workflows/Terraform/terraform.tfstate
 
-
-      # Step 8: Extract EC2 Public IP from Terraform output
+      # Step 7: Extract EC2 Public IP from Terraform output
       - name: Get EC2 instance IP
         id: ec2_ip
         run: |
@@ -83,21 +69,26 @@ jobs:
 
 
          
-      # Step 9: Install Ansible on the runner
+      # Step 8: Install Ansible on the runner
       - name: Install Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
 
+      # Step 11: Debug SSH Connection (Test if the runner can reach the EC2 instance)
+      - name: Test SSH connection to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} hostname
 
-      # Step 10: Configure Ansible Inventory with EC2 public IP
+          
+      # Step 9: Configure Ansible Inventory with EC2 public IP
       - name: Configure Ansible Inventory
         run: |
           echo "[ec2]" > inventory.ini
-          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> inventory.ini
+          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
           cat inventory.ini
-          
-      # Step 11: Run Ansible playbook to configure Prometheus and Grafana
+
+      # Step 10: Run Ansible playbook to configure Prometheus and Grafana
       - name: Run Ansible playbook
         run: |
           ansible-playbook -i inventory.ini .github/workflows/Terraform/playbook.yml
