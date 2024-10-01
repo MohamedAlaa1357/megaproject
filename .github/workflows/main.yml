@@ -62,12 +62,12 @@ jobs:
 
 
       # Step 8: Extract EC2 Public IP from Terraform output
-      - name: Get EC2 instance IP
-        id: ec2_ip
-        run: |
-         cd .github/workflows/Terraform
-         EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
-         echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
+      #- name: Get EC2 instance IP
+       # id: ec2_ip
+        #run: |
+         #cd .github/workflows/Terraform
+         #EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
+         #echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
 
 
       # Step 9: Install Ansible on the runner
@@ -80,7 +80,7 @@ jobs:
       - name: Configure Ansible Inventory
         run: |
           echo "[ec2]" > inventory.ini
-          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          echo "34.222.49.189 ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
           cat inventory.ini
 
       # Step 11: Run Ansible playbook to configure Prometheus and Grafana
