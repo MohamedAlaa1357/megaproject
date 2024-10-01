@@ -21,11 +21,12 @@ jobs:
           ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
           cat ~/.ssh/id_rsa.pub
 
-      # Step 3: Use generated public key in Terraform
-      - name: Use generated public key in Terraform
+      # Step 3: Set AWS Credentials as environment variables
+      - name: Set AWS Credentials
         run: |
-          PUBLIC_KEY=$(cat ~/.ssh/id_rsa.pub)
-          echo "public_key = \"${PUBLIC_KEY}\"" > .github/workflows/Terraform/terraform.tfvars
+          echo "aws_access_key = \"${{ secrets.AWS_ACCESS_KEY }}\"" >> .github/workflows/Terraform/terraform.tfvars
+          echo "aws_secret_key = \"${{ secrets.AWS_SECRET_KEY }}\"" >> .github/workflows/Terraform/terraform.tfvars
+          echo "public_key = \"$(cat ~/.ssh/id_rsa.pub)\"" >> .github/workflows/Terraform/terraform.tfvars
 
       # Step 4: Install Terraform
       - name: Install Terraform
@@ -36,7 +37,6 @@ jobs:
         env:  # Define environment variables here
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-
         run: |
           cd .github/workflows/Terraform
           terraform init
