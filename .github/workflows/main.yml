@@ -44,13 +44,16 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
+
+
       # Step 6: Extract EC2 Public IP from Terraform output
       - name: Get EC2 instance IP
         id: ec2_ip
         run: |
-          cd .github/workflows/Terraform
-          EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
-          echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
+         cd .github/workflows/Terraform
+         EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
+         echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
+
 
       # Step 7: Install Ansible on the runner
       - name: Install Ansible
