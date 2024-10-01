@@ -79,7 +79,6 @@ jobs:
       - name: Test SSH connection to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} hostname
-
           
       # Step 9: Configure Ansible Inventory with EC2 public IP
       - name: Configure Ansible Inventory
