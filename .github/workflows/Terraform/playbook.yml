@@ -37,6 +37,7 @@
           state: started
           enabled: true
   
+          
       - name: Download and install Grafana
         shell: |
           wget https://dl.grafana.com/oss/release/grafana-8.0.0-1.x86_64.rpm
