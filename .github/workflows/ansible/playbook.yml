@@ -1,0 +1,51 @@
+---
+    - hosts: ec2
+      become: true
+      tasks:
+        # Install required dependencies
+        - name: Install dependencies
+          yum:
+            name: 
+              - wget
+              - unzip
+            state: present
+    
+        # Install Prometheus
+        - name: Download and install Prometheus
+          shell: |
+            wget https://github.com/prometheus/prometheus/releases/download/v2.40.0/prometheus-2.40.0.linux-amd64.tar.gz
+            tar -xzf prometheus-2.40.0.linux-amd64.tar.gz
+            mv prometheus-2.40.0.linux-amd64 /etc/prometheus
+            ln -s /etc/prometheus/prometheus /usr/local/bin/prometheus
+            ln -s /etc/prometheus/promtool /usr/local/bin/promtool
+    
+        - name: Create Prometheus service
+          copy:
+            content: |
+              [Unit]
+              Description=Prometheus Server
+              After=network.target
+              [Service]
+              ExecStart=/usr/local/bin/prometheus --config.file /etc/prometheus/prometheus.yml --storage.tsdb.path /var/lib/prometheus/
+              [Install]
+              WantedBy=multi-user.target
+            dest: /etc/systemd/system/prometheus.service
+    
+        - name: Start Prometheus service
+          systemd:
+            name: prometheus
+            state: started
+            enabled: true
+    
+        # Install Grafana
+        - name: Install Grafana
+          shell: |
+            wget https://dl.grafana.com/oss/release/grafana-8.0.0-1.x86_64.rpm
+            yum install grafana-8.0.0-1.x86_64.rpm -y
+    
+        - name: Start Grafana service
+          systemd:
+            name: grafana-server
+            state: started
+            enabled: true
+    

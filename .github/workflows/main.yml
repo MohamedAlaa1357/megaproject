@@ -1,0 +1,63 @@
+name: Terraform AWS EC2 with Ansible
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Generate SSH Key Pair
+      - name: Generate SSH key pair
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+          cat ~/.ssh/id_rsa.pub
+
+      # Step 3: Use generated public key in Terraform
+      - name: Use generated public key in Terraform
+        run: |
+          PUBLIC_KEY=$(cat ~/.ssh/id_rsa.pub)
+          echo "public_key = \"${PUBLIC_KEY}\"" > terraform.tfvars
+
+      # Step 4: Install Terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      # Step 5: Initialize and apply Terraform
+      - name: Terraform init and apply
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      # Step 6: Extract EC2 Public IP from Terraform output
+      - name: Get EC2 instance IP
+        id: ec2_ip
+        run: |
+          EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
+          echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
+
+      # Step 7: Install Ansible on the runner
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      # Step 8: Configure Ansible Inventory with EC2 public IP
+      - name: Configure Ansible Inventory
+        run: |
+          echo "[ec2]" > inventory.ini
+          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          cat inventory.ini
+
+      # Step 9: Run Ansible playbook to configure Prometheus and Grafana
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook -i inventory.ini playbook.yml
