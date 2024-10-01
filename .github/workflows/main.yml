@@ -33,6 +33,10 @@ jobs:
 
       # Step 5: Change to the Terraform directory and initialize and apply Terraform
       - name: Terraform init and apply
+        env:  # Define environment variables here
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
         run: |
           cd .github/workflows/Terraform
           terraform init
