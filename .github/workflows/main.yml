@@ -14,27 +14,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Generate SSH key pair
+      # Step 2: Download Terraform state artifact (if exists)
+      - name: Download Terraform state
+        if: always()  # Download even if the state file doesn't exist
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-state
+          path: .github/workflows/Terraform
+
+      # Step 3: Generate SSH key pair
       - name: Generate SSH key pair
         run: |
           mkdir -p ~/.ssh
           ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
           cat ~/.ssh/id_rsa.pub
 
-      # Step 3: Set AWS Credentials as environment variables
+      # Step 4: Set AWS Credentials as environment variables
       - name: Set AWS Credentials
         run: |
           echo "aws_access_key = \"${{ secrets.AWS_ACCESS_KEY }}\"" >> .github/workflows/Terraform/terraform.tfvars
           echo "aws_secret_key = \"${{ secrets.AWS_SECRET_KEY }}\"" >> .github/workflows/Terraform/terraform.tfvars
           echo "public_key = \"$(cat ~/.ssh/id_rsa.pub)\"" >> .github/workflows/Terraform/terraform.tfvars
 
-      # Step 4: Install Terraform
+      # Step 5: Install Terraform
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
 
 
         
-      # Step 5: Change to the Terraform directory and initialize and apply Terraform
+      # Step 6: Change to the Terraform directory and initialize and apply Terraform
       - name: Terraform init and apply
         env:  # Define environment variables here
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
@@ -45,9 +53,15 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
+      # Step 7: Upload the Terraform state file as an artifact
+      - name: Upload Terraform state
+        uses: actions/upload-artifact@v3
+        with:
+             name: terraform-state
+             path: .github/workflows/Terraform/terraform.tfstate
 
 
-      # Step 6: Extract EC2 Public IP from Terraform output
+      # Step 8: Extract EC2 Public IP from Terraform output
       - name: Get EC2 instance IP
         id: ec2_ip
         run: |
@@ -56,20 +70,20 @@ jobs:
          echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
 
 
-      # Step 7: Install Ansible on the runner
+      # Step 9: Install Ansible on the runner
       - name: Install Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
 
-      # Step 8: Configure Ansible Inventory with EC2 public IP
+      # Step 10: Configure Ansible Inventory with EC2 public IP
       - name: Configure Ansible Inventory
         run: |
           echo "[ec2]" > inventory.ini
           echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
           cat inventory.ini
 
-      # Step 9: Run Ansible playbook to configure Prometheus and Grafana
+      # Step 11: Run Ansible playbook to configure Prometheus and Grafana
       - name: Run Ansible playbook
         run: |
           ansible-playbook -i inventory.ini .github/workflows/Terraform/playbook.yml
