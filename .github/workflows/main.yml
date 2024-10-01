@@ -14,25 +14,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 22: Check if Terraform state artifact exists (optional but helpful)
-      - name: Check for Terraform state artifact
-        id: state_exists
-        run: |
-          if curl -s -I -f -o /dev/null "https://api.github.com/repos/${{ github.repository }}/actions/artifacts" | grep -q "200"; then
-            echo "Artifact exists."
-          else
-            echo "Artifact does not exist."
-            exit 1
-          fi
-
-
-      # Step 2: Download Terraform state artifact (if exists)
-      - name: Download Terraform state
-        if: always()  # Download even if the state file doesn't exist
+      # Step 2: Attempt to download Terraform state artifact (ignore failure)
+      - name: Download Terraform state (if exists)
         uses: actions/download-artifact@v3
         with:
-          name: terraform-state
-          path: .github/workflows/Terraform
+         name: terraform-state
+         path: .github/workflows/Terraform
+        continue-on-error: true  # Allow the workflow to continue even if the artifact doesn't exist
 
       # Step 3: Generate SSH key pair
       - name: Generate SSH key pair
