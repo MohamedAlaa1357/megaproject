@@ -32,6 +32,8 @@ jobs:
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
 
+
+        
       # Step 5: Change to the Terraform directory and initialize and apply Terraform
       - name: Terraform init and apply
         env:  # Define environment variables here

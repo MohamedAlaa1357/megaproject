@@ -3,7 +3,13 @@ resource "aws_key_pair" "deployer_key" {
   public_key = var.public_key
 }
 
-resource "aws_instance" "ec2" {
+provider "aws" {
+  region     = "us-west-2" # Specify your desired AWS region
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
+}
+
+resource "aws_instance" "ansible_host" {
   ami                         = "ami-0c55b159cbfafe1f0"  # Amazon Linux 2 AMI
   instance_type               = "t2.micro"
   key_name                    = aws_key_pair.deployer_key.key_name
