@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Generate SSH Key Pair
+      # Step 2: Generate SSH key pair
       - name: Generate SSH key pair
         run: |
           mkdir -p ~/.ssh
@@ -25,15 +25,16 @@ jobs:
       - name: Use generated public key in Terraform
         run: |
           PUBLIC_KEY=$(cat ~/.ssh/id_rsa.pub)
-          echo "public_key = \"${PUBLIC_KEY}\"" > terraform.tfvars
+          echo "public_key = \"${PUBLIC_KEY}\"" > .github/workflows/Terraform/terraform.tfvars
 
       # Step 4: Install Terraform
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # Step 5: Initialize and apply Terraform
+      # Step 5: Change to the Terraform directory and initialize and apply Terraform
       - name: Terraform init and apply
         run: |
+          cd .github/workflows/Terraform
           terraform init
           terraform apply -auto-approve
 
@@ -41,6 +42,7 @@ jobs:
       - name: Get EC2 instance IP
         id: ec2_ip
         run: |
+          cd .github/workflows/Terraform
           EC2_PUBLIC_IP=$(terraform output -raw instance_public_ip)
           echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
 
@@ -60,4 +62,4 @@ jobs:
       # Step 9: Run Ansible playbook to configure Prometheus and Grafana
       - name: Run Ansible playbook
         run: |
-          ansible-playbook -i inventory.ini playbook.yml
+          ansible-playbook -i inventory.ini .github/workflows/Terraform/playbook.yml
